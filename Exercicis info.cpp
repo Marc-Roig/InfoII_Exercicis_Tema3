@@ -189,7 +189,7 @@
 
             for (int col = 0; col < szx; col++) {
 
-                *(pPantBuf + row_offset_pant + col) = *(pImgBuf + row_offset_img + col);
+                *(pPantBuf + row_offset_pant + pant_x + col) = *(pImgBuf + row_offset_img + col);
 
             }
 
