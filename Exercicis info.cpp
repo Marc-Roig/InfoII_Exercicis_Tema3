@@ -204,7 +204,7 @@
 
         for (int i = 0; i < 20; i++) {
             RdFile(i+1, img_buff, pszx, pszy);
-            CpyImg(img_buff, &pszx, &pszy, Dpant, array[i].x, array[i].y);
+            CpyImg(img_buff, *pszx, *pszy, Dpant, array[i].x, array[i].y);
         }
 
     }
@@ -498,7 +498,7 @@
 
         // PWM OUTPUT TO 0
         uchar val; 
-        ReadPort8bits(portP, &val);
+        ReadPort8bits(portP, &val); // No tinc clar si fa falta llegir primer el que hi ha i aplicar la mascara
         val = val & 0xFE;
         WritePort8bits(portP, &val);
 
