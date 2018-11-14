@@ -502,27 +502,27 @@
 
 // PL3
 // https://www.researchgate.net/post/How_to_convert_Ti_integral_time_and_Td_derivative_time_to_I_and_D_parameter_in_function_block_parameter_for_PID_controller_SIMULINK
+{
+    short PI(short kp, short Ti, short error, short error_ant) {
 
-short PI(short kp, short Ti, short error, short error_ant) {
+        float result = kp*error + (kp/Ti)*(error+error_ant);
 
-    float result = kp*error + (kp/Ti)*(error+error_ant);
+        result = (result >  100) ?  100 : result;
+        result = (result < -100) ? -100 : result;
 
-    result = (result >  100) ?  100 : result;
-    result = (result < -100) ? -100 : result;
+        return (short)result;
 
-    return (short)result;
-
-}
+    }
 
     void updateTsens(char ADCVal) {
 
         static char last_error = 0;
+        char error = Tref - ADCVal;
+        if (error < 0) error = 0;
 
-        Tsens = ADCVal;
+        duty = PI(1.5, 100, error, last_error);
 
-        last_error += Tsens - Tref;
-        pwm = PI(1.5, 100, Tsens-Tref, last_error);
-
-        IniConvADC(0, controlPWM);
+        last_error = error;
 
     }
+}
