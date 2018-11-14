@@ -469,14 +469,17 @@
     void controlPWM() {
 
         static int counts = 0;
+        uchar val; 
 
         if (counts == 0) {
-            uchar val = *(portP) | 0x1;
-            WritePort8bits(0x102, &val);
+            ReadPort8bits(portP, &val);
+            val = val | 0x1;
+            WritePort8bits(portP, &val);
         }
         else if (counts >= duty) {
-            uchar val = *(portP) & 0xFE;
-            WritePort8bits(0x102, &val);
+            ReadPort8bits(portP, &val);
+            val = val & 0xFE;
+            WritePort8bits(portP, &val);
         }
         
         counts++;
@@ -494,8 +497,10 @@
         Set_periodic_timer(10 , controlPWM);
 
         // PWM OUTPUT TO 0
-        uchar val = *(portP) & 0xFE;
-        WritePort8bits(0x102, &val);
+        uchar val; 
+        ReadPort8bits(portP, &val);
+        val = val & 0xFE;
+        WritePort8bits(portP, &val);
 
     }
 }
