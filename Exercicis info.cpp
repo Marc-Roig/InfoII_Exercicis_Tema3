@@ -21,7 +21,7 @@
 
 		miestruct.var1 = 3;
 		for (int i = 0; i < 50; i++) var3[i] = i + 10;
-		miestruct.var2 = miestruct.var3;
+		miestruct.var2 = buf;
 
 
 	}
