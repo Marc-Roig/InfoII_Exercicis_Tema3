@@ -44,7 +44,7 @@
 
 		for (int i = 0; i < 10; i++) {
 			arr[i].var1 = 0x20 + i;
-			arr[i].var2 = (buf+i);
+			arr[i].var2 = &buf[i]; // També es podria ficar (buf+i);
 			for (int j = 0; j < 50; j++) arr[i].var3[j] = 0x30;
 		}
 
