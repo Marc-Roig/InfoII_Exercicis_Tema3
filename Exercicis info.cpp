@@ -313,6 +313,7 @@
 
     bool is_data_correct() {
 
+        
         // Com a minim ha de tenir el caracter dinici, el node de desti, 
         // longitut de dades, checksum i caracter de fi de trama
         if (data_index < 5) return false;
@@ -321,11 +322,11 @@
         if (data[0] != 1)   return false;
 
         // Els possibles valors de node estan entre [0..15]
-        char node = data[1] - 0x10;
+        unsigned char node = data[1] - 0x10;
         if (node < 0 || node > 15) return false;
 
         // Els possibles valors de dlen estan entre [0..30]
-        char data_length = data[2] - 0x10;
+        unsigned char data_length = data[2] - 0x10;
         if (data_length < 0 || data_length > 30) return false;
 
         // Els valors de data han de ser caracters ASCII
@@ -333,6 +334,10 @@
             if (data[i] < '0' || data[i] > 'Z') return false;
         }
 
+        unsigned char checksum = 0; // Variable per a comprovar si el checksum es correcte 
+        for (int i = 0; i < data_index-1; i++) checksum += data[i];
+        if (checksum != data[data_index-1]-0x10) return false;
+    
         return true;
     }
 
