@@ -267,8 +267,10 @@
         ulong GetFilledBytes() {
 
             if (is_full) return buff_length;
-            return p2-p1;
+            int filledBytes = p2-p1;
+            if (filledBytes < 0) filledBytes = -filledBytes;
 
+            return filledBytes;
         }
 
     };
