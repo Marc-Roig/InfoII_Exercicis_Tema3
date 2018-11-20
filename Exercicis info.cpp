@@ -20,7 +20,7 @@
 		short buf[30];
 
 		miestruct.var1 = 3;
-		for (int i = 0; i < 50; i++) var3[i] = i + 10;
+		for (int i = 0; i < 50; i++) miestruct.var3[i] = i + 10;
 		miestruct.var2 = buf;
 
 
