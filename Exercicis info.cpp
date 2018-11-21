@@ -120,7 +120,7 @@
     
     // If decimal place is bigger or equal to 5 round up
     // if its smaller it will be truncated int the /10 division;
-    if ((a % 10) >= 5) a = a - (a%10) + 5;
+    if ((a % 10) >= 5) a = a - (a%10) + 10;
 
     a = (a >=  1000) ?  1000: a;
     a = (a <= -1000) ? -1000: a;
