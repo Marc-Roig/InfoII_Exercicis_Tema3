@@ -8,8 +8,8 @@ class MAC() {
 public:
 
 	void SendFrm(uchar datalen, uchar* data);
-	bool isResponseOK();
-	void readResponse(uchar* datalen, uchar* data);
+	bool isResponseRecievedOK();
+	void ReadRecievedFrm(uchar* datalen, uchar* data);
 
 };
 
@@ -36,7 +36,7 @@ public:
 
 	}
 
-	void SendFrm(uchar datalen, uchar* data, uchar num_reintentos) {
+	void SendFrame(uchar datalen, uchar* data, uchar num_reintentos) {
 
 		if (busy) return;
 
@@ -48,7 +48,7 @@ public:
 
 	}
 
-	uchar getResponseStatus() {
+	uchar FrameResponse_GetStatus() {
 
 		if (busy || !ResponseAvailable) return 0;
 		else if (ResponseAvailable) return 1;
@@ -56,7 +56,7 @@ public:
 
 	}
 
-	void ReadResponse(str_LLC_resp * r) {
+	void FrameResponse_GetFrm(str_LLC_resp * r) {
 
 		if (!ResponseAvailable || ResponseFailed) return;
 
@@ -79,7 +79,7 @@ void AttTimer() {
 
 	if (mac.isResponseOK()) {
 
-		mac.SendFrm(llc.messageToSend.datalen, llc.messageToSend.data);
+		mac.ReadRecievedFrm(llc.messageToSend.datalen, llc.messageToSend.data);
 		llc.ResponseFailed = false;
 		llc.ResponseAvailable = true;
 		llc.busy = false;
