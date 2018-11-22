@@ -31,7 +31,6 @@ public:
 		ResponseAvailable = false;
 		nIntentos = 0;
 
-		// Seria millor cridarla cada cop que s'ha enviat un missatge sense ser periodica
 		SetTim(100, AttTimer, 1); // Cada 100ms, crida AttTimer, repeteix per sempre.
 
 	}
