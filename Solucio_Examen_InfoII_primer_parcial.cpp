@@ -1,6 +1,6 @@
 struct str_LLC_resp {
 	uchar datalen;
-	uchar* data;
+	uchar data[10];
 };
 
 // CAPA 2A - MAC
