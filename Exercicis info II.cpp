@@ -15,8 +15,12 @@
     HANDLE hTh2;
     HANDLE hTh3;
 
+    CRITICAL_SECTION cs;
+
     // main Thread
     int main() {
+
+        InitializeCriticalSection(&cs);
 
         hTh2 = CreateThread(
                 NULL, 0, (LPTHREAD_START_ROUTINE) Th2,
@@ -28,6 +32,9 @@
                 NULL, CREATE_SUSPENDED, NULL);
         if (hTh3 == NULL) ErrorExit("Err. creacion thread\n");
 
+        hEvT2 = CreateEvent(NULL, FALSE, FALSE, NULL);
+        hEvT3 = CreateEvent(NULL, FALSE, FALSE, NULL);
+
         ResumeThread(hTh2);
         ResumeThread(hTh3);
 
@@ -38,6 +45,8 @@
         KillTimer(hEvT2);
         WaitForSingleObject(hTh3, INFINITE);
         KillTimer(hEvT3);
+
+        DeleteCriticalSection(&cs);
 
         return 0;
 
@@ -113,8 +122,10 @@
 
     bool program_running = true;
     // HANDLE hTh_Timer;
-
-    class cPwm {
+    cPwm obj_Pwm;
+    
+    class cPwm 
+    {
     private:
         uchar portAdr;
         uchar portBit;
@@ -141,29 +152,34 @@
 
     public:
         // cPwm(ushort portAdr, uchar portBit) {}
-        uchar cPwm(ushort prtAdr, uchar  prtBit) {
+        uchar cPwm(ushort prtAdr, uchar  prtBit) 
+        {
             portAdr = prtAdr;
             portBit = prtBit;
             ready = true;
             return 0;
         }
 
-        uchar SetDutyCycle(uchar pct) {
+        uchar SetDutyCycle(uchar pct) 
+        {
             next_dc = pct;
             return 0;
         }
 
-        void AttTim() {
+        void AttTim() 
+        {
 
-            switch(state) {
+            switch(state) 
+            {
 
                 case (PWM_ON):
                     // If the dc value is 99 (100%) the output will never turn LOW: DC = 100%.
                     if (next_dc == 99 && count >= 100) {count = 0;}
                     // If the counter is greater than the dc value, turn off the otuput
-                    else if (count >= new_dc) {
+                    else if (count >= new_dc) 
+                    {
 
-                        state = OFF;
+                        state = PWM_OFF;
                         uchar portStatus = ReadPort(portAdr);
                         WritePort(portAdr, portStatus & ~(1 << prtBit));
 
@@ -177,9 +193,10 @@
                     // Turn on the output. In case the dc value is 0 , the output will
                     // never turn HIGH: DC = 0%
                     if (next_dc == 0 && count >= 100) {count = 0;} 
-                    else if (count >= 100) {
+                    else if (count >= 100) 
+                    {
 
-                        state = ON;
+                        state = PWM_ON;
                         count = 0;
                         dc = next_dc;
 
@@ -201,7 +218,8 @@
 
     }
 
-    int main () {
+    int main () 
+    {
 
 
         hTh_Tec = CreateThread(
@@ -213,6 +231,9 @@
                 NULL, 0, (LPTHREAD_START_ROUTINE) Th3,
                 NULL, CREATE_SUSPENDED, NULL);
         if (hTh_Pwm == NULL) ErrorExit("Err. creacion thread\n");
+
+        hEv_Tec = CreateEvent(NULL, FALSE, FALSE, NULL);
+        hEv_Pwm = CreateEvent(NULL, FALSE, FALSE, NULL);
 
         ResumeThread(hTh_Tec);
         ResumeThread(hTh_Pwm);
@@ -227,13 +248,15 @@
 
     }
 
-    void CALLBACK AttSysTim(INT param) {
+    void CALLBACK AttSysTim(INT param) 
+    {
 
         static uint count = 0;
 
         setEvent(hEv_Pwm);    // Call pwm every 1 ms
  
-        if (count++ >= 200) { // Call keyboard every 200 ms
+        if (count++ >= 200)  // Call keyboard every 200 ms
+        { 
             setEvent(hEv_Tec);
             count = 0;
         }
@@ -242,15 +265,19 @@
 
 
 
-    DWORD WINAPI Th_Tec(DWORD pParam) {
+    DWORD WINAPI Th_Tec(DWORD pParam) 
+    {
         
-        while (program_running) {
+        while (program_running) 
+        {
 
             WaitForSingleObject(hEv_Tec, INFINITE);
-            if (kbhit()) {
+            if (kbhit()) 
+            {
                 a = getch();
-
-                switch (a) {
+                EnterCriticalSection(&cs);
+                switch (a) 
+                {
                     case '+':
                         obj_Pwm.SetDutyCycle(++dc);
                         break;
@@ -271,20 +298,164 @@
                         ungetch(a);
                         break;
                 }
+                LeaveCriticalSection(&cs);
             }
         }
 
     }
 
-    DWORD WINAPI Th_Pwm(DWORD pParam) {
+    DWORD WINAPI Th_Pwm(DWORD pParam) 
+    {
 
-        while (program_running) {
+        while (program_running) 
+        {
 
             WaitForSingleObject(hEv_Pwm, INFINITE);
-
+            // PSO
+            EnterCriticalSection(&cs);
             obj_Pwm.AttTim();
+            LeaveCriticalSection(&cs);
 
         }
+
+    }
+
+}
+
+// 2014 - C3
+// Aquest es dels divertits... L'he fet rapid i no esta revisat!!!! 
+{
+    #define PORT_COM 2
+    #define BPS_SPEED 9600
+
+    HANDLE hCom;
+    HANDLE evRx;
+    HANDLE evTx;
+    HANDLE hEv_Timer;
+
+    CRITICAL_SECTION cs_message;
+
+    int main() {
+
+        InitializeCriticalSection(&cs_message);
+
+        hTh_Rx = CreateThread(
+                NULL, 0, (LPTHREAD_START_ROUTINE) Th2,
+                NULL, CREATE_SUSPENDED, NULL);
+        if (hTh_Rx == NULL) ErrorExit("Err. creacion thread\n");
+        
+        hTh_Tx = CreateThread(
+                NULL, 0, (LPTHREAD_START_ROUTINE) Th3,
+                NULL, CREATE_SUSPENDED, NULL);
+        if (hTh_Tx == NULL) ErrorExit("Err. creacion thread\n");
+
+        evRx = CreateEvent(NULL, FALSE, FALSE, NULL);
+        evTx = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+        hCom = Com_Open(PORT_COM, BPS_SPEED, evRx, evTx);
+
+        ResumeThread(hTh_Rx);
+        ResumeThread(hTh_Tx);
+
+        WaitForSingleObject(hTh_Rx, INFINITE);
+        WaitForSingleObject(hTh_Tx, INFINITE);
+
+        DeleteCriticalSection(&cs_message);
+
+        return 0;
+
+    }
+
+    DWORD WINAPI Th_Rx(DWROD pParam) {
+        
+        uchar idx = 0;
+        uchar message[7];
+
+        while (1) {
+
+            WaitForSingleObject(evRx, INFINITE);
+            uchar byte_in = Com_ReadRxByte(hCom);
+            switch(idx)
+            {
+                case 0:
+                    if (byte_in != 0x01) idx = 0;
+                    else message[0] = 0x01;
+                    break;
+
+                case 4:
+                    if (byte_in == 0x04) {
+
+                        EnterCriticalSection(&cs_message);
+                        if (ADC_busy) 
+                        {
+                            response_message[1] = 0x0;
+                            response_message[2] = message[2];
+                            response_message[3] = message[3];
+                            response_message[4] = 0x04;
+                            Com_Tx_busy = true;
+                            Com_SendByte(hCom, 0x01);
+
+                        } else if (!Com_Tx_busy) {
+                            
+                            response_message[1] = 0x01;
+                            response_message[4] = message[2];
+                            response_message[5] = message[3];  
+                            ReadAdcCh(response_message[1], AdcCharacter);
+                            ADC_busy = true;
+                        }
+                        // If Com Tx is busy discard message
+                        LeaveCriticalSection(&cs_message);
+                    }
+                    idx = 0;
+                    break;
+
+                default:
+                    message[idx++] = byte_in;
+                    break;
+            }
+
+
+        }
+    }
+
+    uchar response_message[7]  = {0x01, '' , '', '', '' , '', 0x04};
+    bool Com_Tx_busy  = false;
+    bool ADC_busy     = false;
+
+    DWORD WINAPI Th_Tx(DWROD pParam) {
+
+        uchar idx = 1;
+
+        while (1) {
+
+            WaitForSingleObject(evTx, INFINITE);
+
+            if ( idx == -1 || idx >= 7 ) {idx = 0; continue;}
+
+            EnterCriticalSection(&cs_message);
+
+            Com_SendByte(hCom, response_message[idx]);
+            if ( response_message[idx] != 4 ) {
+                Com_Tx_busy = false;
+                idx = -1;
+            } else idx++;
+
+            LeaveCriticalSection(&cs_message);
+        }
+
+    }
+
+    void AdcCharacter(uchar valorAdc) {
+
+        EnterCriticalSection(&cs_message);
+        ADC_busy = false;
+        if (Com_Tx_busy) return;   // Discard value if Com Tx is sending message
+
+        response_message[2] = (valorAdc >> 4  ) + 0x30;
+        response_message[3] = (valorAdc & 0x0f) + 0x30;
+        LeaveCriticalSection(&cs_message);
+
+        Com_SendByte(hCom, 0x01);
 
     }
 
