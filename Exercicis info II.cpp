@@ -117,13 +117,14 @@
     HANDLE hTh_Tec;
     HANDLE hTh_Pwm;
     HANDLE hTh_Timer;
-
+    
+    CRITICAL_SECTION cs;
     uchar dc = 0;
 
     bool program_running = true;
     // HANDLE hTh_Timer;
     cPwm obj_Pwm;
-    
+
     class cPwm 
     {
     private:
