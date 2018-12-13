@@ -325,7 +325,27 @@
 
 // 2014 - C3
 // Aquest es dels divertits... L'he fet rapid i no esta revisat!!!! 
-{
+
+// PORT DE COMMUNICACIO
+// - Obrir el port amb  funcio Com_Open(...)
+// - Els events RX i TX son els que s'activaran en les tasques Th_Tx i Th_Rx
+
+// CAS GENERAL DE FUNCIONAMENT
+// Quan es rebi un missatge, el flag evRX s'activara i el thread Th_Rx sen encarregara
+// de guardar el caracter en la variable global response_message. En el cas de que shagin enviat 
+// tots els caracters correctament es cridara la funcio ReadAdcCh(). 
+// Quan la conversio del ADC shagui acabat comensara la sequencia per enviar tots els caracters
+// de resposta. Aquesta sequencia es:
+// - Enviar un primer caracter amb la funcio Com_SendByte(...)
+// - Quan shagui enviat sactivara levent evTx, continuara lexecucio del Th_Tx i si queden caracters
+//   per enviar (si sen han enviat 7 o el caracter es el de finalitzacio de trama 0x04) es tornara
+//   a enviar el seguent caracter amb la funcio Com_SendByte(...).
+
+// CAS ESPECIAL
+// Quan sha acabat de rebre un missatge, la conversio anterior del ADC no sha acabat.
+// En aquest cas es rebutjara la lectura del ADC i directament senvia el codi derror amb la mateixa 
+// sequencia que abans.
+{ 
     #define PORT_COM 2
     #define BPS_SPEED 9600
 
@@ -334,11 +354,16 @@
     HANDLE evTx;
     HANDLE hEv_Timer;
 
+    uchar response_message[7]  = {0x01, '' , '', '', '' , '', 0x04};
+    bool Com_Tx_busy  = false;
+    bool ADC_busy     = false;
+
+    // Seccio critica per accedir al missatge i varaibles Com_Tx_busy i ADC_busy
     CRITICAL_SECTION cs_message;
 
     int main() {
 
-        InitializeCriticalSection(&cs_message);
+        InitializeCriticalSection(&cs_message); 
 
         hTh_Rx = CreateThread(
                 NULL, 0, (LPTHREAD_START_ROUTINE) Th2,
@@ -367,6 +392,8 @@
 
     }
 
+    // Cada cop que es rebi un caracter s'activa levent evRx
+    // i sexecuta un loop del while.
     DWORD WINAPI Th_Rx(DWROD pParam) {
         
         uchar idx = 0;
@@ -375,34 +402,38 @@
         while (1) {
 
             WaitForSingleObject(evRx, INFINITE);
+            // Llegir caracter que s'ha rebut.
             uchar byte_in = Com_ReadRxByte(hCom);
-            switch(idx)
+            switch(idx) 
             {
-                case 0:
+                case 0: // El primer caracter ha de ser un 1
                     if (byte_in != 0x01) idx = 0;
                     else message[0] = 0x01;
                     break;
 
-                case 4:
+                case 4: // L'ultim caracter ha de ser un 4
                     if (byte_in == 0x04) {
 
                         EnterCriticalSection(&cs_message);
+                        // Si sesta fent una conversio ADC, es descartara la mesura
+                        // i senvia el missatge derror amb el format especificat al
+                        // enunciat.
                         if (ADC_busy) 
                         {
                             response_message[1] = 0x0;
                             response_message[2] = message[2];
                             response_message[3] = message[3];
                             response_message[4] = 0x04;
-                            Com_Tx_busy = true;
-                            Com_SendByte(hCom, 0x01);
+                            Com_Tx_busy = true;       // Es comensara a enviar la trama
+                            Com_SendByte(hCom, 0x01); // Comensar sequencia amb el primer caracter
 
                         } else if (!Com_Tx_busy) {
                             
                             response_message[1] = 0x01;
                             response_message[4] = message[2];
                             response_message[5] = message[3];  
+                            ADC_busy = true;          // Es comensa la conversio ADC
                             ReadAdcCh(response_message[1], AdcCharacter);
-                            ADC_busy = true;
                         }
                         // If Com Tx is busy discard message
                         LeaveCriticalSection(&cs_message);
@@ -419,9 +450,10 @@
         }
     }
 
-    uchar response_message[7]  = {0x01, '' , '', '', '' , '', 0x04};
-    bool Com_Tx_busy  = false;
-    bool ADC_busy     = false;
+    // El flag evTx sactiva quan sha acabat denviar un caracter.
+    // La funcio del thread es continuar enviant els caracters.
+    // idx=-1 representa que lultim caracter enviat era el ultim 
+    // de la trama a enviar. D'aquesta manera es para la sequencia.
 
     DWORD WINAPI Th_Tx(DWROD pParam) {
 
@@ -431,14 +463,19 @@
 
             WaitForSingleObject(evTx, INFINITE);
 
-            if ( idx == -1 || idx >= 7 ) {idx = 0; continue;}
+            // Si lultim caracter enviat era lultim de la trama o 
+            // sha superat el tamany maxim de la trama no fer res.
+            if ( idx == -1 || idx >= 7 ) {idx = 1; continue;}
 
             EnterCriticalSection(&cs_message);
 
+            // Continuar la sequencia enviant el seguent bit.
             Com_SendByte(hCom, response_message[idx]);
+
+            // Si el caracter enviat es el caracter de final de trama
             if ( response_message[idx] != 4 ) {
-                Com_Tx_busy = false;
-                idx = -1;
+                Com_Tx_busy = false; // S'ha acabat la sequencia
+                idx = -1;            // S'ha enviat lultim caracter
             } else idx++;
 
             LeaveCriticalSection(&cs_message);
@@ -446,16 +483,21 @@
 
     }
 
+
     void AdcCharacter(uchar valorAdc) {
 
         EnterCriticalSection(&cs_message);
-        ADC_busy = false;
+        ADC_busy = false;          // ADC conversion ended
         if (Com_Tx_busy) return;   // Discard value if Com Tx is sending message
 
+        // Codificar el valor del ADC tal i com fica al enunciat.
         response_message[2] = (valorAdc >> 4  ) + 0x30;
         response_message[3] = (valorAdc & 0x0f) + 0x30;
+
+        Com_Tx_busy = true;        // Es comensara a enviar la trama 
         LeaveCriticalSection(&cs_message);
 
+        // Comensar sequencia denviar trama.
         Com_SendByte(hCom, 0x01);
 
     }
