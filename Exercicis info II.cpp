@@ -39,7 +39,7 @@
         ResumeThread(hTh3);
 
         SetTimerPeriod(100 , hEvT2);
-        SetTimerPeriod(0.05, hEvT3); // ??? ulong is integer, how to set event every 0.05 ms
+        SetTimerPeriod(0.05, hEvT3); // ulong no pot tenir decimals, el professor diu que es un error del enunciat
 
         WaitForSingleObject(hTh2, INFINITE);
         KillTimer(hEvT2);
@@ -65,11 +65,13 @@
 
                 switch (a) {
                     case 'R':
-                        ref = REF_VAL;
+                        ref = REF_VAL; // Carregar valor de referencia
                         break;
 
                     case 27:
-                        WritePort(PSalida, 0);
+                        EnterCriticalSection(&cs);
+                        WritePort(PSalida, 0)
+                        LeaveCriticalSection(&cs);
                         program_running = false;
                         break;
 
