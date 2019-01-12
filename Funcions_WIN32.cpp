@@ -97,7 +97,31 @@
 // ALTRES
 
     // Funció callback timer
-    void CALLBACK Th_timer (UINT uId, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
+        void CALLBACK Th_timer (UINT uId, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
 
-    ResumeThread(hTh);
+
+    // Esperar a multiples objectes
+        HANDLE arrEv [2] = { hEv_ex1, hEv_ex2 };
+        ulong resp;
+
+        resp = WaitForMultipleObjects ( 
+                                        n_objects        ,
+                                        arrEv            , // array de handlers
+                                        false            , // esperarse a tots
+                                        INFINITE 
+                                       );
+
+        switch (resp) {
+
+            case WAIT_OBJECT_0 : 
+                // ..
+                break;
+            case WAIT_OBJECT_0 + 1:
+                // ..
+                break;
+            //..
+
+        }
+
+
 
