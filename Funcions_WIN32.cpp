@@ -13,7 +13,8 @@
 
     // Mutex
         HANDLE hMu;
-        hMu = CreateMutex ( NULL , // default security attributes,
+        hMu = CreateMutex ( 
+                            NULL , // default security attributes,
                             NULL , // initially not owned
                             NULL   // unnamed
                           );
@@ -26,6 +27,30 @@
 
     // Semaphore
         HANDLE hSem;
+
+        hSem = CreateSemaphore(
+                                NULL, // no atrib. seguridad
+                                10  , // valor inicial
+                                10  , // valor maximo
+                                NULL, // sin nombre
+                              );
+
+
+
+        WaitForSingleObject ( hSem, INFINITE );
+        // ... 
+        ReleaseSemaphore ( hSem, 1, 0 );
+
+
+// THREADS
+
+    HANDLE hTh;
+
+    hTh = CreateThread ( NULL, 0, (LPTHREAD_START_ROUTINE) Th_function_callback, NULL, CREATE_SUSPENDED, NULL);
+
+    SetThreadPriority ( hTh, /*...*/ );
+    ResumeThread ( hTh );
+
 
 // PRIORITATS
 
