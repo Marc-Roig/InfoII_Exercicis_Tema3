@@ -154,13 +154,11 @@
         bool ready = false;
 
     public:
-        // cPwm(ushort portAdr, uchar portBit) {}
-        uchar cPwm(ushort prtAdr, uchar  prtBit) 
+        cPwm(ushort prtAdr, uchar  prtBit) 
         {
             portAdr = prtAdr;
             portBit = prtBit;
             ready = true;
-            return 0;
         }
 
         uchar SetDutyCycle(uchar pct) 
@@ -475,7 +473,7 @@
             Com_SendByte(hCom, response_message[idx]);
 
             // Si el caracter enviat es el caracter de final de trama
-            if ( response_message[idx] != 4 ) {
+            if ( response_message[idx] == 4 ) {
                 Com_Tx_busy = false; // S'ha acabat la sequencia
                 idx = -1;            // S'ha enviat lultim caracter
             } else idx++;
