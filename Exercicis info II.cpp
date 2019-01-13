@@ -146,6 +146,8 @@
         // valor de dc més gran que lanterior durant el periode OFF.
         // Aixo domes afecta en el periode OFF del PWM. Ja que si durant el periode ON sintrodueix
         // un valor mes petit o més gran de dc no genera aquesta problematica.
+        // 
+        // El professor ho implementa sense aixo al pdf Ex6_App1 del moodle, mirarho.
         uchar dc = 0;
         uchar next_dc = 0;
         uchar state = 0;
@@ -182,7 +184,7 @@
 
                         state = PWM_OFF;
                         uchar portStatus = ReadPort(portAdr);
-                        WritePort(portAdr, portStatus & ~(1 << prtBit));
+                        WritePort(portAdr, portStatus & ~(1 << portBit));
 
                     }
 
@@ -202,7 +204,7 @@
                         dc = next_dc;
 
                         uchar portStatus = ReadPort(portAdr);
-                        WritePort(portAdr, portStatus | (1 << prtBit));
+                        WritePort(portAdr, portStatus | (1 << portBit));
 
                     }
 

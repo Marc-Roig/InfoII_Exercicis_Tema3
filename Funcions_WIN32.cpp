@@ -80,7 +80,7 @@
 
         WaitForSingleObject(hEv, INFINITE);
 
-    // TIME EVENT
+    // TIME EVENT -- CALLBACK FUNCTION
 
         HANDLE hTEv;
 
@@ -93,6 +93,18 @@
 
         WaitForSingleObject(hTEv, INFINITE);
 
+    // TIME EVENT -- CALLBACK EVENT
+
+        HANDLE hTEv;
+
+        hTEv = timeSetEvent (   5000    ,     // period (ms)
+                                0       ,     // max resolution
+                                hEv_Timer,    // Callback event handle
+                                0       ,
+                                TIME_ONESHOT | TIME_CALLBACK_EVENT_SET, //modo disparo unico, TIME_PERIODIC para repetir
+                            );
+
+        WaitForSingleObject(hTEv, INFINITE);
 
 // ALTRES
 
