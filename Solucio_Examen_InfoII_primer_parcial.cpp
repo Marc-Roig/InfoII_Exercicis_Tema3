@@ -43,6 +43,8 @@ public:
 		messageToSend.datalen = datalen % 10;
 		messageToSend.data = data;
 
+		mac.SendFrm(datalen, data);
+
 		busy = true;
 
 	}
@@ -76,7 +78,7 @@ void AttTimer() {
 
 	if (!llc.busy || llc.ResponseFailed) return;
 
-	if (mac.isResponseOK()) {
+	if (mac.isResponseRecievedOK()) {
 
 		mac.ReadRecievedFrm(llc.messageToSend.datalen, llc.messageToSend.data);
 		llc.ResponseFailed = false;
@@ -88,6 +90,7 @@ void AttTimer() {
 
 		llc.nIntentos--;
 		if (llc.nIntentos <= 0) llc.ResponseFailed = true; 
+		else mac.SendFrm(llc.messageToSend.datalen, llc.messageToSend.data);
 
 	}
 
